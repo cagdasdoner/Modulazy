@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="iot.vlc.iotconfigurator" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>IoT Configurator</name>
+    <description>
+        A PoC project for configuring IoT device via Flashlight powered by Apache Cordova.
+    </description>
+    <author email="donercagdas@gmail.com" href="https://github.com/cagdasdoner">
+        Cagdas Doner
+    </author>
+    <content src="index.html" />
+    <access origin="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <allow-intent href="tel:*" />
+    <allow-intent href="sms:*" />
+    <allow-intent href="mailto:*" />
+    <allow-intent href="geo:*" />
+    <platform name="android">
+        <allow-intent href="market:*" />
+        <icon src="assets/logo.png" />
+    </platform>
+    <platform name="ios">
+        <allow-intent href="itms:*" />
+        <allow-intent href="itms-apps:*" />
+    </platform>
+    <plugin name="cordova-plugin-flashlight" spec="file:plugins/cordova-plugin-flashlight" />
+    <plugin name="cordova-plugin-whitelist" spec="1" />
+    <engine name="android" spec="^5.0.0" />
+</widget>
