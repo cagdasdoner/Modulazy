@@ -3,16 +3,17 @@
 #include "Hardware.h"
 
 bool bumperCheck = false;
-unsigned short bumperPhase = 0;
+unsigned short bumperIndex = 0;
 /* Bumper is FF. So it is a 8 bit duration of time.*/
 unsigned short bumperDuration = TIME_SLOT * 8;
-unsigned short dataPhase = 0;
-char dataConv = 0;
+unsigned short bitIndex = 0;
+char dataAsByte = 0;
+short lightThreshold = 1024;
 char bufferStr[BUFFER_LEN] = {0};
 /* TODO: Adjust to correct SSID and pas length. */
 char ssid[BUFFER_LEN] = {0};
 char pass[BUFFER_LEN] = {0};
-unsigned short bufferIndex = 0;
+unsigned short dataIndex = 0;
 unsigned short dataSequence = 0;
 bool configured = false;
 
@@ -22,10 +23,10 @@ void resetVariables()
   memset(pass, 0, BUFFER_LEN);
   memset(bufferStr, 0, BUFFER_LEN);
   bumperCheck = false;
-  bumperPhase = 0;
-  dataPhase = 0;
-  dataConv = 0;
-  bufferIndex = 0;
+  bumperIndex = 0;
+  bitIndex = 0;
+  dataAsByte = 0;
+  dataIndex = 0;
   dataSequence = 0;
   configured = false;
 }
@@ -47,16 +48,17 @@ void VLCLoop()
     return; 
   }
   
-  unsigned short sensorValue = analogRead(A0);
+  unsigned short sensorValue = HWAnalogRead();
   if(!bumperCheck)
   {
-    if(sensorValue == 1024)
+    /* TODO: Adapt into environment light level. So threshold check will be added by sampling. */
+    if(sensorValue == lightThreshold)
     {
-      bumperPhase++;
-      if(bumperPhase == bumperDuration / TIME_SLOT)
+      bumperIndex++;
+      if(bumperIndex == bumperDuration / TIME_SLOT)
       {
         bumperCheck = true;
-        bumperPhase = 0;
+        bumperIndex = 0;
         HWSetBlueLed();
         Serial.println("Bumper done.");
         /* A little delay and slide to read light data in the middle of SLOT time. */
@@ -66,15 +68,16 @@ void VLCLoop()
     }
     else
     {
-      bumperPhase = 0;
+      bumperIndex = 0;
     }
   }
   else
   {
-    if(sensorValue == 1024)
+    /* Current threshold is max value read from sensor. */
+    if(sensorValue == lightThreshold)
     {
-      /* Bit order is MSB. */
-      dataConv = dataConv + pow(2, 7 - dataPhase);
+      /* Bit order is MSB. So reverse check. */
+      dataAsByte = dataAsByte + pow(2, 7 - bitIndex);
     }
 
     if(dataSequence == MAX_DATA_PART && !configured) 
@@ -85,36 +88,37 @@ void VLCLoop()
       /* Connect to WiFi */
       WiFiBegin(ssid, pass);
     }
-
-    if(dataPhase == 7)
+    /* Bit order is 0 to 7 for a byte. Check byte completion. */
+    if(bitIndex == 7)
     {
-      printf("%x,%c\n",dataConv, dataConv);
-      bufferStr[bufferIndex++] = dataConv;
+      printf("%x,%c\n",dataAsByte, dataAsByte);
+      bufferStr[dataIndex++] = dataAsByte;
 
-      if(dataConv == '\0')
+      if(dataAsByte == '\0')
       {
+        /* First data chunk will be ssid. */
         if (dataSequence == 0)
         {
-          strncpy(ssid, bufferStr, bufferIndex);
+          strncpy(ssid, bufferStr, dataIndex);
           printf("%s\n", ssid);
         }
+        /* Second data chunk will be pass. */
         else if (dataSequence == 1)
         {
-          strncpy(pass, bufferStr, bufferIndex);
+          strncpy(pass, bufferStr, dataIndex);
           printf("%s\n", pass);
         }
-        bufferIndex = 0;
+        dataIndex = 0;
         /* TODO: remove memset, not needed. */
         memset(bufferStr, 0, BUFFER_LEN);
         dataSequence++;
       }
-           
-      dataPhase = 0;
-      dataConv = 0;
+      bitIndex = 0;
+      dataAsByte = 0;
     }
     else
     {
-      dataPhase++;
+      bitIndex++;
     }
 
     delay(TIME_SLOT);

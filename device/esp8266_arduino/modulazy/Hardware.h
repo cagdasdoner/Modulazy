@@ -11,6 +11,7 @@
 
 void HWInit();
 void HWLoop();
+short HWAnalogRead();
 void HWSetGreenLed();
 void HWSetBlueLed();
 void HWSetRedLed();

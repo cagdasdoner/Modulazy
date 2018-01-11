@@ -31,6 +31,10 @@ void HWSetRedLed()
   analogWrite(LED_GREEN, 0);
 }
 
+short HWAnalogRead()
+{
+  return analogRead(A0);
+}
 
 void HWInit()
 {
